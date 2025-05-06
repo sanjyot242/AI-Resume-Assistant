@@ -1,7 +1,7 @@
 from openai import OpenAI
 from dotenv import load_dotenv
 import os
-import student_info
+
 
 # load environment variables
 load_dotenv()
@@ -89,7 +89,7 @@ Tailor the cover letter to the given job description, referencing specific skill
     return cover_letter
 
 # use chat completions api to generate resume advice based on student information
-def generate__resume_advice(name, email, phone, education, skills, experience, job_description):
+def generate_resume_advice(name, email, phone, education, skills, experience, job_description):
     prompt = f"""
 You are an expert career adviser and resume reviewer. Review a student's resume based on the following input:
 
@@ -125,31 +125,31 @@ Tailor the suggestions to the given job description, referencing specific skills
     resume_advice = completion.choices[0].message.content
     return resume_advice 
 
-# Test with sample input
-resume = generate_resume(student_info.student_1["name"], 
-                                        student_info.student_1["email"], 
-                                        student_info.student_1["phone"], 
-                                        student_info.student_1["education"], 
-                                        student_info.student_1["skills"], 
-                                        student_info.student_1["experience"], 
-                                        student_info.job_description_1)
+#  Test with sample input
+# resume = generate_resume(student_info.student_1["name"], 
+#                                         student_info.student_1["email"], 
+#                                         student_info.student_1["phone"], 
+#                                         student_info.student_1["education"], 
+#                                         student_info.student_1["skills"], 
+#                                         student_info.student_1["experience"], 
+#                                         student_info.job_description_1)
 
-cover_letter = generate_cover_letter(student_info.student_1["name"], 
-                                        student_info.student_1["email"], 
-                                        student_info.student_1["phone"], 
-                                        student_info.student_1["education"], 
-                                        student_info.student_1["skills"], 
-                                        student_info.student_1["experience"], 
-                                        student_info.job_description_1)
+# cover_letter = generate_cover_letter(student_info.student_1["name"], 
+#                                         student_info.student_1["email"], 
+#                                         student_info.student_1["phone"], 
+#                                         student_info.student_1["education"], 
+#                                         student_info.student_1["skills"], 
+#                                         student_info.student_1["experience"], 
+#                                         student_info.job_description_1)
 
-resume_advice = generate__resume_advice(student_info.student_2["name"], 
-                                        student_info.student_2["email"], 
-                                        student_info.student_2["phone"], 
-                                        student_info.student_2["education"], 
-                                        student_info.student_2["skills"], 
-                                        student_info.student_2["experience"], 
-                                        student_info.job_description_2)
+# resume_advice = generate__resume_advice(student_info.student_2["name"], 
+#                                         student_info.student_2["email"], 
+#                                         student_info.student_2["phone"], 
+#                                         student_info.student_2["education"], 
+#                                         student_info.student_2["skills"], 
+#                                         student_info.student_2["experience"], 
+#                                         student_info.job_description_2)
 
-print(resume)
-print(cover_letter)
-print(resume_advice)
+# print(resume)
+# print(cover_letter)
+# print(resume_advice)

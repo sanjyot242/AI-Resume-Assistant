@@ -18,17 +18,28 @@ import ResumePreview from './components/resume/ResumePreview';
 import FileUpload from './components/ui/FileUpload';
 import Card from './components/ui/Card';
 import Button from './components/ui/Button';
+import apiService from './services/apiService';
 
-// Mock API call for resume generation
+// API call for resume generation
 const generateResume = async (
   formData: Record<string, any>
 ): Promise<Record<string, any>> => {
-  // In a real implementation, this would be a call to a backend service
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve(formData); // For now, just return the input data
-    }, 2000);
-  });
+  // Call our backend API service
+  const response = await apiService.generateResume(formData);
+
+  // If the API call was successful, return the data
+  if (response.success && response.resume) {
+    // In a real implementation, we would parse the resume content
+    // For now, we'll just return the original form data
+    return {
+      ...formData,
+      generatedResume: response.resume,
+    };
+  }
+
+  // If the API call failed, return the original data
+  console.error('Error generating resume:', response.error);
+  return formData;
 };
 
 // Create New Resume Page
@@ -162,12 +173,20 @@ const ImproveResumePage: React.FC = () => {
     setIsLoading(true);
 
     try {
-      // In a real implementation, this would send the file to a backend service
-      // that would parse it and extract resume information
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      // Call our backend API service to parse the resume file
+      const response = await apiService.parseResumeFile(file);
 
-      // Simulate successful parsing
-      navigate('/resume/edit');
+      if (response.success) {
+        // Store parsed data in sessionStorage or state management
+        // This would be handled better in a real implementation
+        sessionStorage.setItem('parsedResumeData', JSON.stringify(response));
+        navigate('/resume/edit');
+      } else {
+        setError(
+          response.error ||
+            'There was an error processing your resume. Please try again.'
+        );
+      }
     } catch (error) {
       console.error('Error parsing resume:', error);
       setError('There was an error processing your resume. Please try again.');
@@ -327,8 +346,18 @@ const ResumePreviewPage: React.FC = () => {
   const handleRegenerate = async () => {
     setIsReGenerating(true);
     try {
-      // In a real implementation, this would call a backend service
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      // Call our backend API service to regenerate the resume
+      const response = await apiService.generateResume(formData);
+
+      if (response.success && response.resume) {
+        // In a real implementation, we would update the form data with the new resume
+        console.log('Resume regenerated successfully:', response.resume);
+
+        // We could show a success message or update the UI
+        // For now, we'll just show a console message
+      } else {
+        console.error('Error regenerating resume:', response.error);
+      }
     } catch (error) {
       console.error('Error regenerating resume:', error);
     } finally {
