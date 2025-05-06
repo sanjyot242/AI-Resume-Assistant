@@ -65,7 +65,7 @@ const ResumePreview: React.FC<ResumePreviewProps> = ({
     ) || {};
 
   return (
-    <div className='bg-white rounded-lg shadow-lg overflow-hidden'>
+    <div className='bg-white rounded-lg shadow-lg overflow-hidden relative'>
       {/* Loading overlay */}
       {isLoading && (
         <div className='absolute inset-0 bg-gray-100 bg-opacity-75 flex items-center justify-center z-10'>
@@ -136,8 +136,8 @@ const ResumePreview: React.FC<ResumePreviewProps> = ({
         {activeTab === 'preview' && (
           <div className='flex flex-col md:flex-row md:space-x-6'>
             {/* Resume preview */}
-            <div className='md:w-2/3 mb-6 md:mb-0'>
-              <Card className='p-8 h-full overflow-auto shadow-md border-gray-300 max-h-[800px]'>
+            <div className='md:w-2/3 mb-6 md:mb-0 flex flex-col'>
+              <Card className='p-8 flex-1 overflow-y-auto shadow-md border-gray-300 max-h-[70vh] md:h-[70vh]'>
                 {generatedProfile ? (
                   <div>
                     {/* Header section */}
