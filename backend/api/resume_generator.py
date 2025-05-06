@@ -1,6 +1,15 @@
 from openai import OpenAI
 from dotenv import load_dotenv
 import os
+import json
+from pydantic import ValidationError
+
+from models.models import ResumeProfile
+
+
+
+
+
 
 
 # load environment variables
@@ -12,13 +21,61 @@ client = OpenAI(
 ) 
 
 # use chat completions api to generate resume based on student information
-def generate_resume(name, email, phone, education, skills, experience, job_description):
+def generate_resume(name, email, phone, education, skills, experience, job_description,
+                   location="", linkedIn="", website="", summary="", job_target=""):
     prompt = f"""
-You are an expert resume writer. Create a professional, one-page resume for a student based on the following input:
+Please output **only** valid JSON matching this TypeScript interface (no extra keys, no prose):
+
+interface Profile {{
+    fullName: string;
+    email: string;
+    phone: string;
+    location: string;
+    linkedIn: string;
+    website: string;
+    summary: string;
+    education: Array<{{
+        id: string;
+        school: string;
+        degree: string;
+        fieldOfStudy: string;
+        startDate: string;
+        endDate: string;
+        location: string;
+        gpa: string;
+        description: string;
+        current: boolean;
+    }}>;
+    experience: Array<{{
+        id: string;
+        company: string;
+        jobTitle: string;
+        location: string;
+        startDate: string;
+        endDate: string;
+        current: boolean;
+        description: string;
+        bullets: string[];
+    }}>;
+    skills: Array<{{
+        id: string;
+        name: string;
+        category: string;
+        level: string;
+    }}>;
+}}
+
+Create a professional resume profile using the following information:
 
 Name: {name}
 Email: {email}
 Phone: {phone}
+Location: {location}
+LinkedIn: {linkedIn}
+Website: {website}
+
+Summary:
+{summary}
 
 Education:
 {education}
@@ -29,26 +86,52 @@ Skills:
 Experience:
 {experience}
 
+Target Job Information:
+{job_target}
+
 Job Description:
 {job_description}
 
-Format the output cleanly using sections and bullet points. Only use the information provided by the student. 
-Do not add extra experiences, projects, or certifications.
-Highlight accomplishments and achievements using strong action verbs and quantifiable data and statisics.
-Tailor the resume to the given job description, referencing specific skills and experiences relevant to the job.
+Create a compelling, ATS-optimized profile for this person targeting the given job description. 
+Each education and experience item needs a unique id string.
+Each skill needs a unique id string.
+Ensure bullets are detailed and quantified where possible.
+Organize skills into appropriate categories.
 """
 
     completion = client.chat.completions.create(
         model="gpt-4o-mini",  
         messages=[
-            {"role": "system", "content": "You are a professional resume generator."},
+            {"role": "system", "content": "You are a professional resume generator that outputs only valid JSON. No additional text or commentary."},
             {"role": "user", "content": prompt}
         ],
         temperature=0.7
     )
 
-    resume = completion.choices[0].message.content
-    return resume
+    # Get the JSON text from the response
+    json_text = completion.choices[0].message.content
+    
+    # Clean up the JSON text (remove any markdown formatting if present)
+    if "```json" in json_text:
+        json_text = json_text.split("```json")[1].split("```")[0].strip()
+    elif "```" in json_text:
+        json_text = json_text.split("```")[1].split("```")[0].strip()
+    
+    try:
+        # Parse the JSON
+        resume_data = json.loads(json_text)
+        # Validate with Pydantic
+        resume_profile = ResumeProfile(**resume_data)
+        return resume_profile
+    except json.JSONDecodeError as e:
+        print(f"JSON decode error: {e}")
+        print(f"Raw JSON: {json_text}")
+        raise ValueError(f"Invalid JSON received from AI: {e}")
+    except ValidationError as e:
+        print(f"Validation error: {e}")
+        raise ValueError(f"AI response didn't match expected schema: {e}")
+
+
 
 # use chat completions api to generate cover letter based on student information
 def generate_cover_letter(name, email, phone, education, skills, experience, job_description):

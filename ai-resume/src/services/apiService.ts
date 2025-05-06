@@ -1,16 +1,20 @@
 // apiService.ts - API service for handling backend requests
-
+import { ResumeGenerationResponse } from '../types'; // Adjust the import path as necessary
 // API base URL - would come from environment in a real app
 const API_BASE_URL = 'http://localhost:8000';
 
-// Types
 interface StudentInfo {
   name: string;
   email: string;
   phone: string;
+  location?: string;
+  linkedIn?: string;
+  website?: string;
   education: string;
   skills: string;
   experience: string;
+  summary?: string;
+  job_target?: string;
 }
 
 interface ResumeRequest {
@@ -26,9 +30,7 @@ interface ResumeResponse {
   error?: string;
 }
 
-/**
- * Convert frontend form data to backend student info format
- */
+// Updated convertFormDataToStudentInfo function:
 const convertFormDataToStudentInfo = (
   formData: Record<string, any>
 ): StudentInfo => {
@@ -36,8 +38,12 @@ const convertFormDataToStudentInfo = (
   const name = formData.fullName || '';
   const email = formData.email || '';
   const phone = formData.phone || '';
+  const location = formData.location || '';
+  const linkedIn = formData.linkedIn || '';
+  const website = formData.website || '';
+  const summary = formData.summary || '';
 
-  // Education
+  // Format education more effectively
   const education =
     formData.education
       ?.map((edu: any) => {
@@ -45,16 +51,21 @@ const convertFormDataToStudentInfo = (
           edu.startDate
         } - ${edu.current ? 'Present' : edu.endDate}${
           edu.gpa ? `, GPA: ${edu.gpa}` : ''
-        }${edu.description ? `\n${edu.description}` : ''}`;
+        }${edu.location ? `, ${edu.location}` : ''}${
+          edu.description ? `\n${edu.description}` : ''
+        }`;
       })
       .join('\n\n') || '';
 
-  // Experience
+  // Format experience more effectively
   const experience =
     formData.experience
       ?.map((exp: any) => {
         const bullets =
-          exp.bullets?.map((bullet: string) => `- ${bullet}`).join('\n') || '';
+          exp.bullets
+            ?.filter((b: string) => b.trim())
+            .map((bullet: string) => `- ${bullet}`)
+            .join('\n') || '';
         return `${exp.jobTitle} at ${exp.company}, ${exp.startDate} - ${
           exp.current ? 'Present' : exp.endDate
         }${exp.location ? `, ${exp.location}` : ''}${
@@ -63,21 +74,43 @@ const convertFormDataToStudentInfo = (
       })
       .join('\n\n') || '';
 
-  // Skills
-  const skills =
-    formData.skills
-      ?.map((skill: any) => {
-        return `${skill.name}${skill.level ? ` (${skill.level})` : ''}`;
-      })
-      .join(', ') || '';
+  // Group skills by category for better organization
+  const skillsByCategory =
+    formData.skills?.reduce((acc: any, skill: any) => {
+      if (!acc[skill.category]) {
+        acc[skill.category] = [];
+      }
+      acc[skill.category].push(
+        `${skill.name}${skill.level ? ` (${skill.level})` : ''}`
+      );
+      return acc;
+    }, {}) || {};
+
+  const skillsFormatted = Object.entries(skillsByCategory)
+    .map(
+      ([category, skills]) => `${category}: ${(skills as string[]).join(', ')}`
+    )
+    .join('\n');
+
+  // Include job target information
+  const jobTarget = formData.jobTarget
+    ? `Target Job Title: ${formData.jobTarget.targetJobTitle || ''}\n` +
+      `Target Industry: ${formData.jobTarget.targetIndustry || ''}\n` +
+      `Target Level: ${formData.jobTarget.targetJobLevel || ''}`
+    : '';
 
   return {
     name,
     email,
     phone,
+    location,
+    linkedIn,
+    website,
     education,
-    skills,
+    skills: skillsFormatted,
     experience,
+    summary,
+    job_target: jobTarget,
   };
 };
 
@@ -86,10 +119,15 @@ const convertFormDataToStudentInfo = (
  */
 export async function generateResume(
   formData: Record<string, any>
-): Promise<ResumeResponse> {
+): Promise<ResumeGenerationResponse> {
   try {
     const studentInfo = convertFormDataToStudentInfo(formData);
     const jobDescription = formData.jobTarget?.jobDescription || '';
+
+    console.log('Sending to backend:', {
+      student_info: studentInfo,
+      job_description: jobDescription,
+    });
 
     const response = await fetch(`${API_BASE_URL}/api/generate-resume`, {
       method: 'POST',
@@ -99,7 +137,7 @@ export async function generateResume(
       body: JSON.stringify({
         student_info: studentInfo,
         job_description: jobDescription,
-      } as ResumeRequest),
+      }),
     });
 
     if (!response.ok) {

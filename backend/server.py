@@ -1,7 +1,6 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-from typing import Optional, List
+from models.models import ResumeRequest
 import os
 from dotenv import load_dotenv
 
@@ -28,18 +27,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Models
-class StudentInfo(BaseModel):
-    name: str
-    email: str
-    phone: str
-    education: str
-    skills: str
-    experience: str
 
-class ResumeRequest(BaseModel):
-    student_info: StudentInfo
-    job_description: str
 
 # API Endpoints
 @app.get("/")
@@ -48,7 +36,6 @@ async def root():
 
 @app.post("/api/generate-resume")
 async def api_generate_resume(request: ResumeRequest):
-    print(request)
     try:
         resume = generate_resume(
             request.student_info.name,
@@ -57,7 +44,12 @@ async def api_generate_resume(request: ResumeRequest):
             request.student_info.education,
             request.student_info.skills,
             request.student_info.experience,
-            request.job_description
+            request.job_description,
+            location=request.student_info.location,
+            linkedIn=request.student_info.linkedIn,
+            website=request.student_info.website,
+            summary=request.student_info.summary,
+            job_target=request.student_info.job_target
         )
         return {"success": True, "resume": resume}
     except Exception as e:

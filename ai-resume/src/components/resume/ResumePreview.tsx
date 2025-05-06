@@ -2,6 +2,8 @@
 import React, { useState } from 'react';
 import Button from '../ui/Button';
 import Card from '../ui/Card';
+import { ResumeProfile } from '../../types';
+import { Skill } from '../../types';
 
 interface ResumePreviewProps {
   formData: Record<string, any>;
@@ -22,19 +24,24 @@ const ResumePreview: React.FC<ResumePreviewProps> = ({
     'preview'
   );
 
+  const generatedProfile = formData.generatedResumeProfile as
+    | ResumeProfile
+    | undefined;
+
   // Extract data from formData
-  const {
-    fullName,
-    email,
-    phone,
-    location,
-    linkedIn,
-    website,
-    summary,
-    education,
-    experience,
-    skills,
-  } = formData;
+  // const {
+  //   fullName,
+  //   email,
+  //   phone,
+  //   location,
+  //   linkedIn,
+  //   website,
+  //   summary,
+  //   education,
+  //   experience,
+  //   skills,
+  //   generatedResume,
+  // } = formData;
 
   const handleExport = (format: 'pdf' | 'docx') => {
     // Placeholder for export functionality
@@ -44,15 +51,18 @@ const ResumePreview: React.FC<ResumePreviewProps> = ({
 
   // Group skills by category
   const skillsByCategory =
-    skills?.reduce((acc: Record<string, string[]>, skill: any) => {
-      if (!acc[skill.category]) {
-        acc[skill.category] = [];
-      }
-      acc[skill.category].push(
-        skill.name + (skill.level ? ` (${skill.level})` : '')
-      );
-      return acc;
-    }, {}) || {};
+    generatedProfile?.skills?.reduce(
+      (acc: Record<string, string[]>, skill: any) => {
+        if (!acc[skill.category]) {
+          acc[skill.category] = [];
+        }
+        acc[skill.category].push(
+          skill.name + (skill.level ? ` (${skill.level})` : '')
+        );
+        return acc;
+      },
+      {}
+    ) || {};
 
   return (
     <div className='bg-white rounded-lg shadow-lg overflow-hidden'>
@@ -128,132 +138,187 @@ const ResumePreview: React.FC<ResumePreviewProps> = ({
             {/* Resume preview */}
             <div className='md:w-2/3 mb-6 md:mb-0'>
               <Card className='p-8 h-full overflow-auto shadow-md border-gray-300 max-h-[800px]'>
-                {/* Header section */}
-                <div className='border-b border-gray-300 pb-6 mb-6 text-center'>
-                  <h1 className='text-3xl font-bold text-gray-900 mb-2'>
-                    {fullName || 'Your Name'}
-                  </h1>
-                  <div className='flex flex-wrap justify-center text-gray-600'>
-                    {email && <span className='mx-2'>{email}</span>}
-                    {phone && <span className='mx-2'>{phone}</span>}
-                    {location && <span className='mx-2'>{location}</span>}
-                    {linkedIn && <span className='mx-2'>{linkedIn}</span>}
-                    {website && <span className='mx-2'>{website}</span>}
-                  </div>
-                </div>
-
-                {/* Summary section */}
-                {summary && (
-                  <div className='mb-6'>
-                    <h2 className='text-xl font-bold text-gray-800 mb-2 border-b border-gray-200 pb-1'>
-                      Professional Summary
-                    </h2>
-                    <p className='text-gray-700'>{summary}</p>
-                  </div>
-                )}
-
-                {/* Experience section */}
-                {experience && experience.length > 0 && (
-                  <div className='mb-6'>
-                    <h2 className='text-xl font-bold text-gray-800 mb-3 border-b border-gray-200 pb-1'>
-                      Professional Experience
-                    </h2>
-                    {experience.map((exp: any, index: number) => (
-                      <div key={index} className='mb-4'>
-                        <div className='flex justify-between items-start'>
-                          <h3 className='text-lg font-semibold text-gray-800'>
-                            {exp.jobTitle}
-                          </h3>
-                          <span className='text-sm text-gray-600'>
-                            {exp.startDate} -{' '}
-                            {exp.current ? 'Present' : exp.endDate}
-                          </span>
-                        </div>
-                        <div className='flex justify-between items-start'>
-                          <p className='text-gray-700 font-medium'>
-                            {exp.company}
-                          </p>
-                          {exp.location && (
-                            <p className='text-sm text-gray-600'>
-                              {exp.location}
-                            </p>
-                          )}
-                        </div>
-                        {exp.description && (
-                          <p className='text-gray-700 mt-1 mb-2'>
-                            {exp.description}
-                          </p>
-                        )}
-                        <ul className='list-disc pl-5 text-gray-700'>
-                          {exp.bullets.map(
-                            (bullet: string, i: number) =>
-                              bullet.trim() && (
-                                <li key={i} className='mt-1'>
-                                  {bullet}
-                                </li>
-                              )
-                          )}
-                        </ul>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* Education section */}
-                {education && education.length > 0 && (
-                  <div className='mb-6'>
-                    <h2 className='text-xl font-bold text-gray-800 mb-3 border-b border-gray-200 pb-1'>
-                      Education
-                    </h2>
-                    {education.map((edu: any, index: number) => (
-                      <div key={index} className='mb-3'>
-                        <div className='flex justify-between items-start'>
-                          <h3 className='text-lg font-semibold text-gray-800'>
-                            {edu.school}
-                          </h3>
-                          <span className='text-sm text-gray-600'>
-                            {edu.startDate} -{' '}
-                            {edu.current ? 'Present' : edu.endDate}
-                          </span>
-                        </div>
-                        <p className='text-gray-700 font-medium'>
-                          {edu.degree}
-                          {edu.fieldOfStudy ? `, ${edu.fieldOfStudy}` : ''}
-                          {edu.gpa ? ` | GPA: ${edu.gpa}` : ''}
-                        </p>
-                        {edu.location && (
-                          <p className='text-sm text-gray-600'>
-                            {edu.location}
-                          </p>
-                        )}
-                        {edu.description && (
-                          <p className='text-gray-700 mt-1'>
-                            {edu.description}
-                          </p>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* Skills section */}
-                {skills && skills.length > 0 && (
+                {generatedProfile ? (
                   <div>
-                    <h2 className='text-xl font-bold text-gray-800 mb-3 border-b border-gray-200 pb-1'>
-                      Skills
-                    </h2>
-                    {Object.entries(skillsByCategory).map(
-                      ([category, skillList]) => (
-                        <div key={category} className='mb-3'>
-                          <h3 className='text-lg font-semibold text-gray-800'>
-                            {category}
-                          </h3>
-                          <p className='text-gray-700'>
-                            {(skillList as string[]).join(', ')}
-                          </p>
-                        </div>
-                      )
+                    {/* Header section */}
+                    <div className='border-b border-gray-300 pb-6 mb-6 text-center'>
+                      <h1 className='text-3xl font-bold text-gray-900 mb-2'>
+                        {generatedProfile.fullName}
+                      </h1>
+                      <div className='flex flex-wrap justify-center text-gray-600'>
+                        {generatedProfile.email && (
+                          <span className='mx-2'>{generatedProfile.email}</span>
+                        )}
+                        {generatedProfile.phone && (
+                          <span className='mx-2'>{generatedProfile.phone}</span>
+                        )}
+                        {generatedProfile.location && (
+                          <span className='mx-2'>
+                            {generatedProfile.location}
+                          </span>
+                        )}
+                        {generatedProfile.linkedIn && (
+                          <span className='mx-2'>
+                            {generatedProfile.linkedIn}
+                          </span>
+                        )}
+                        {generatedProfile.website && (
+                          <span className='mx-2'>
+                            {generatedProfile.website}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Summary section */}
+                    {generatedProfile.summary && (
+                      <div className='mb-6'>
+                        <h2 className='text-xl font-bold text-gray-800 mb-2 border-b border-gray-200 pb-1'>
+                          Professional Summary
+                        </h2>
+                        <p className='text-gray-700'>
+                          {generatedProfile.summary}
+                        </p>
+                      </div>
                     )}
+
+                    {/* Experience section */}
+                    {generatedProfile.experience &&
+                      generatedProfile.experience.length > 0 && (
+                        <div className='mb-6'>
+                          <h2 className='text-xl font-bold text-gray-800 mb-3 border-b border-gray-200 pb-1'>
+                            Professional Experience
+                          </h2>
+                          {generatedProfile.experience.map((exp) => (
+                            <div key={exp.id} className='mb-4'>
+                              <div className='flex justify-between items-start'>
+                                <h3 className='text-lg font-semibold text-gray-800'>
+                                  {exp.jobTitle}
+                                </h3>
+                                <span className='text-sm text-gray-600'>
+                                  {exp.startDate} -{' '}
+                                  {exp.current ? 'Present' : exp.endDate}
+                                </span>
+                              </div>
+                              <div className='flex justify-between items-start'>
+                                <p className='text-gray-700 font-medium'>
+                                  {exp.company}
+                                </p>
+                                {exp.location && (
+                                  <p className='text-sm text-gray-600'>
+                                    {exp.location}
+                                  </p>
+                                )}
+                              </div>
+                              {exp.description && (
+                                <p className='text-gray-700 mt-1 mb-2'>
+                                  {exp.description}
+                                </p>
+                              )}
+                              <ul className='list-disc pl-5 text-gray-700'>
+                                {exp.bullets.map(
+                                  (bullet, i) =>
+                                    bullet.trim() && (
+                                      <li key={i} className='mt-1'>
+                                        {bullet}
+                                      </li>
+                                    )
+                                )}
+                              </ul>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                    {/* Education section */}
+                    {generatedProfile.education &&
+                      generatedProfile.education.length > 0 && (
+                        <div className='mb-6'>
+                          <h2 className='text-xl font-bold text-gray-800 mb-3 border-b border-gray-200 pb-1'>
+                            Education
+                          </h2>
+                          {generatedProfile.education.map((edu) => (
+                            <div key={edu.id} className='mb-3'>
+                              <div className='flex justify-between items-start'>
+                                <h3 className='text-lg font-semibold text-gray-800'>
+                                  {edu.school}
+                                </h3>
+                                <span className='text-sm text-gray-600'>
+                                  {edu.startDate} -{' '}
+                                  {edu.current ? 'Present' : edu.endDate}
+                                </span>
+                              </div>
+                              <p className='text-gray-700 font-medium'>
+                                {edu.degree}
+                                {edu.fieldOfStudy
+                                  ? `, ${edu.fieldOfStudy}`
+                                  : ''}
+                                {edu.gpa ? ` | GPA: ${edu.gpa}` : ''}
+                              </p>
+                              {edu.location && (
+                                <p className='text-sm text-gray-600'>
+                                  {edu.location}
+                                </p>
+                              )}
+                              {edu.description && (
+                                <p className='text-gray-700 mt-1'>
+                                  {edu.description}
+                                </p>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                    {/* Skills section */}
+                    {generatedProfile.skills &&
+                      generatedProfile.skills.length > 0 && (
+                        <div>
+                          <h2 className='text-xl font-bold text-gray-800 mb-3 border-b border-gray-200 pb-1'>
+                            Skills
+                          </h2>
+                          {(() => {
+                            // Group skills by category
+                            const skillsByCategory =
+                              generatedProfile.skills.reduce((acc, skill) => {
+                                if (!acc[skill.category]) {
+                                  acc[skill.category] = [];
+                                }
+                                acc[skill.category].push(skill);
+                                return acc;
+                              }, {} as Record<string, Skill[]>);
+
+                            return Object.entries(skillsByCategory).map(
+                              ([category, skills]) => (
+                                <div key={category} className='mb-3'>
+                                  <h3 className='text-lg font-semibold text-gray-800'>
+                                    {category}
+                                  </h3>
+                                  <p className='text-gray-700'>
+                                    {skills
+                                      .map(
+                                        (skill) =>
+                                          `${skill.name}${
+                                            skill.level
+                                              ? ` (${skill.level})`
+                                              : ''
+                                          }`
+                                      )
+                                      .join(', ')}
+                                  </p>
+                                </div>
+                              )
+                            );
+                          })()}
+                        </div>
+                      )}
+                  </div>
+                ) : (
+                  // Fallback if no generated profile is available
+                  <div>
+                    <h1>Ill have a fall back here </h1>
+                    {/* Existing fallback implementation */}
+                    {/* This would be your original rendering code using formData */}
                   </div>
                 )}
               </Card>

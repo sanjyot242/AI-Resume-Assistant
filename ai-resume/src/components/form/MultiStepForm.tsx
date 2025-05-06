@@ -1,5 +1,4 @@
-// MultiStepForm.tsx
-import React, { useState, useEffect, ReactElement } from 'react';
+import React, { useState, useEffect, ReactElement, useCallback } from 'react';
 import Button from '../ui/Button';
 import FormStepper from './FormStepper';
 
@@ -36,51 +35,48 @@ const MultiStepForm: React.FC<MultiStepFormProps> = ({
   const [formData, setFormData] = useState<Record<string, any>>(initialData);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Reset form data when initialData changes (use JSON.stringify to compare objects)
+  // Reset form data when initialData reference changes (not on every render)
   useEffect(() => {
     setFormData(initialData);
-  }, [JSON.stringify(initialData)]);
+  }, [initialData]); // Only depends on initialData reference
 
   const currentStep = steps[currentStepIndex];
   const isFirstStep = currentStepIndex === 0;
   const isLastStep = currentStepIndex === steps.length - 1;
 
-  // Clone the current step component with props
-  const currentStepWithProps = React.cloneElement(currentStep.component, {
-    formData,
-    onUpdateFormData: (data: Record<string, any>) => {
-      setFormData({ ...formData, ...data });
-    },
-    onNext: handleNext,
-    onBack: handleBack,
-    isFirstStep,
-    isLastStep,
-  });
+  // Use useCallback for functions passed to children to prevent re-creation on every render
+  const handleUpdateFormData = useCallback((data: Record<string, any>) => {
+    setFormData((prevData) => ({ ...prevData, ...data }));
+  }, []); // No dependencies needed since we use functional updates
 
-  function handleNext() {
+  const handleNext = useCallback(() => {
     if (isLastStep) {
       handleSubmit();
     } else {
-      setCurrentStepIndex(currentStepIndex + 1);
+      setCurrentStepIndex((prevIndex) => prevIndex + 1);
       window.scrollTo(0, 0); // Scroll to top for new step
     }
-  }
+  }, [isLastStep]); // Only depend on isLastStep
 
-  function handleBack() {
+  const handleBack = useCallback(() => {
     if (!isFirstStep) {
-      setCurrentStepIndex(currentStepIndex - 1);
+      setCurrentStepIndex((prevIndex) => prevIndex - 1);
       window.scrollTo(0, 0); // Scroll to top for new step
     }
-  }
+  }, [isFirstStep]); // Only depend on isFirstStep
 
-  function handleStepClick(index: number) {
-    // Only allow navigating to previous steps or next step if current is completed
-    if (index < currentStepIndex || index === currentStepIndex + 1) {
-      setCurrentStepIndex(index);
-      window.scrollTo(0, 0); // Scroll to top for new step
-    }
-  }
+  const handleStepClick = useCallback(
+    (index: number) => {
+      // Only allow navigating to previous steps or next step if current is completed
+      if (index < currentStepIndex || index === currentStepIndex + 1) {
+        setCurrentStepIndex(index);
+        window.scrollTo(0, 0); // Scroll to top for new step
+      }
+    },
+    [currentStepIndex]
+  ); // Only depend on currentStepIndex
 
+  // This needs to be outside of useCallback because it needs access to current formData
   async function handleSubmit() {
     setIsSubmitting(true);
     try {
@@ -91,6 +87,17 @@ const MultiStepForm: React.FC<MultiStepFormProps> = ({
       setIsSubmitting(false);
     }
   }
+
+  // Clone the current step component with props
+  // This happens during render, not in an effect
+  const currentStepWithProps = React.cloneElement(currentStep.component, {
+    formData,
+    onUpdateFormData: handleUpdateFormData,
+    onNext: handleNext,
+    onBack: handleBack,
+    isFirstStep,
+    isLastStep,
+  });
 
   return (
     <div className={`${className}`}>

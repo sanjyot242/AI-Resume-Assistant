@@ -1,5 +1,5 @@
 // App.tsx
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   BrowserRouter as Router,
   Routes,
@@ -51,11 +51,38 @@ const CreateResumePage: React.FC = () => {
   const handleFormComplete = async (data: Record<string, any>) => {
     setIsGenerating(true);
     try {
-      const generatedResume = await generateResume(data);
-      setFormData(generatedResume);
-      navigate('/resume/preview');
+      // First, combine the existing formData with the new data from the final step
+      const completeFormData = { ...formData, ...data };
+
+      console.log('Complete form data before API call:', completeFormData);
+
+      // Call API to generate resume
+      const response = await apiService.generateResume(completeFormData);
+
+      if (response.success && response.resume) {
+        // Store both the form data and the generated resume profile
+        const resultData = {
+          ...completeFormData,
+          generatedResumeProfile: response.resume, // This now contains the structured resume data
+        };
+
+        // Update state
+        setFormData(resultData);
+
+        // Also store in sessionStorage as backup
+        sessionStorage.setItem('resumeData', JSON.stringify(resultData));
+
+        // Navigate to preview page with a small delay to ensure state is updated
+        setTimeout(() => {
+          navigate('/resume/preview');
+        }, 100);
+      } else {
+        console.error('Error generating resume:', response.error);
+        alert('Failed to generate resume. Please try again.');
+      }
     } catch (error) {
       console.error('Error generating resume:', error);
+      alert('An unexpected error occurred. Please try again.');
     } finally {
       setIsGenerating(false);
     }
@@ -240,99 +267,135 @@ const ResumePreviewPage: React.FC = () => {
   const navigate = useNavigate();
   const [isReGenerating, setIsReGenerating] = useState(false);
 
-  // In a real app, this data would come from a state management library or context
-  const [formData] = useState<Record<string, any>>({
-    fullName: 'John Doe',
-    email: 'john.doe@example.com',
-    phone: '(555) 123-4567',
-    location: 'New York, NY',
-    linkedIn: 'linkedin.com/in/johndoe',
-    website: 'johndoe.dev',
-    summary:
-      'Experienced software engineer with a passion for developing innovative solutions that solve real-world problems. Specializing in frontend development with React and TypeScript, with a strong background in user experience design and responsive web applications.',
-    education: [
+  const storedData = sessionStorage.getItem('resumeData');
+  const initialData = storedData
+    ? JSON.parse(storedData)
+    : // In a real app, this data would come from a state management library or context
       {
-        id: '1',
-        school: 'University of Technology',
-        degree: "Bachelor's Degree",
-        fieldOfStudy: 'Computer Science',
-        startDate: '2015-09',
-        endDate: '2019-05',
-        location: 'Boston, MA',
-        gpa: '3.8',
-        description:
-          "Dean's List, Relevant coursework in Software Engineering, Data Structures, Algorithms",
-        current: false,
-      },
-    ],
-    experience: [
-      {
-        id: '1',
-        company: 'Tech Solutions Inc.',
-        jobTitle: 'Senior Frontend Developer',
+        fullName: 'John Doe',
+        email: 'john.doe@example.com',
+        phone: '(555) 123-4567',
         location: 'New York, NY',
-        startDate: '2021-06',
-        endDate: 'Present',
-        current: true,
-        description: 'Lead developer on customer-facing web applications',
-        bullets: [
-          'Architected and implemented a React component library that reduced development time by 40%',
-          "Led a team of 5 developers in rebuilding the company's flagship product using React and TypeScript",
-          'Implemented performance optimizations that improved load times by 60%',
-          'Collaborated with UX designers to create an intuitive, accessible user interface',
+        linkedIn: 'linkedin.com/in/johndoe',
+        website: 'johndoe.dev',
+        summary:
+          'Experienced software engineer with a passion for developing innovative solutions that solve real-world problems. Specializing in frontend development with React and TypeScript, with a strong background in user experience design and responsive web applications.',
+        education: [
+          {
+            id: '1',
+            school: 'University of Technology',
+            degree: "Bachelor's Degree",
+            fieldOfStudy: 'Computer Science',
+            startDate: '2015-09',
+            endDate: '2019-05',
+            location: 'Boston, MA',
+            gpa: '3.8',
+            description:
+              "Dean's List, Relevant coursework in Software Engineering, Data Structures, Algorithms",
+            current: false,
+          },
         ],
-      },
-      {
-        id: '2',
-        company: 'Digital Innovations',
-        jobTitle: 'Frontend Developer',
-        location: 'Boston, MA',
-        startDate: '2019-06',
-        endDate: '2021-05',
-        current: false,
-        description: '',
-        bullets: [
-          'Developed responsive web applications using React and Redux',
-          'Implemented unit tests that increased code coverage from 45% to 85%',
-          'Mentored junior developers and conducted code reviews',
+        experience: [
+          {
+            id: '1',
+            company: 'Tech Solutions Inc.',
+            jobTitle: 'Senior Frontend Developer',
+            location: 'New York, NY',
+            startDate: '2021-06',
+            endDate: 'Present',
+            current: true,
+            description: 'Lead developer on customer-facing web applications',
+            bullets: [
+              'Architected and implemented a React component library that reduced development time by 40%',
+              "Led a team of 5 developers in rebuilding the company's flagship product using React and TypeScript",
+              'Implemented performance optimizations that improved load times by 60%',
+              'Collaborated with UX designers to create an intuitive, accessible user interface',
+            ],
+          },
+          {
+            id: '2',
+            company: 'Digital Innovations',
+            jobTitle: 'Frontend Developer',
+            location: 'Boston, MA',
+            startDate: '2019-06',
+            endDate: '2021-05',
+            current: false,
+            description: '',
+            bullets: [
+              'Developed responsive web applications using React and Redux',
+              'Implemented unit tests that increased code coverage from 45% to 85%',
+              'Mentored junior developers and conducted code reviews',
+            ],
+          },
         ],
-      },
-    ],
-    skills: [
-      { id: '1', name: 'React', category: 'Programming', level: 'Expert' },
-      { id: '2', name: 'TypeScript', category: 'Programming', level: 'Expert' },
-      { id: '3', name: 'JavaScript', category: 'Programming', level: 'Expert' },
-      { id: '4', name: 'HTML/CSS', category: 'Programming', level: 'Advanced' },
-      { id: '5', name: 'Redux', category: 'Programming', level: 'Advanced' },
-      { id: '6', name: 'Git', category: 'Tools', level: 'Advanced' },
-      { id: '7', name: 'Jest', category: 'Tools', level: 'Intermediate' },
-      { id: '8', name: 'Webpack', category: 'Tools', level: 'Intermediate' },
-      {
-        id: '9',
-        name: 'UI/UX Design',
-        category: 'Design',
-        level: 'Intermediate',
-      },
-      {
-        id: '10',
-        name: 'Agile/Scrum',
-        category: 'Management',
-        level: 'Advanced',
-      },
-      {
-        id: '11',
-        name: 'Team Leadership',
-        category: 'Soft Skills',
-        level: 'Advanced',
-      },
-      {
-        id: '12',
-        name: 'Problem Solving',
-        category: 'Soft Skills',
-        level: 'Expert',
-      },
-    ],
-  });
+        skills: [
+          { id: '1', name: 'React', category: 'Programming', level: 'Expert' },
+          {
+            id: '2',
+            name: 'TypeScript',
+            category: 'Programming',
+            level: 'Expert',
+          },
+          {
+            id: '3',
+            name: 'JavaScript',
+            category: 'Programming',
+            level: 'Expert',
+          },
+          {
+            id: '4',
+            name: 'HTML/CSS',
+            category: 'Programming',
+            level: 'Advanced',
+          },
+          {
+            id: '5',
+            name: 'Redux',
+            category: 'Programming',
+            level: 'Advanced',
+          },
+          { id: '6', name: 'Git', category: 'Tools', level: 'Advanced' },
+          { id: '7', name: 'Jest', category: 'Tools', level: 'Intermediate' },
+          {
+            id: '8',
+            name: 'Webpack',
+            category: 'Tools',
+            level: 'Intermediate',
+          },
+          {
+            id: '9',
+            name: 'UI/UX Design',
+            category: 'Design',
+            level: 'Intermediate',
+          },
+          {
+            id: '10',
+            name: 'Agile/Scrum',
+            category: 'Management',
+            level: 'Advanced',
+          },
+          {
+            id: '11',
+            name: 'Team Leadership',
+            category: 'Soft Skills',
+            level: 'Advanced',
+          },
+          {
+            id: '12',
+            name: 'Problem Solving',
+            category: 'Soft Skills',
+            level: 'Expert',
+          },
+        ],
+      };
+  const [formData, setFormData] = useState<Record<string, any>>(initialData);
+  useEffect(() => {
+    if (!formData.fullName || !formData.generatedResumeProfile) {
+      // Missing critical data, redirect back to form
+      alert('Not found data ');
+      navigate('/resume/create');
+    }
+  }, [formData, navigate]);
 
   const handleEdit = (section: string) => {
     navigate(`/resume/create?section=${section}`);
@@ -371,13 +434,19 @@ const ResumePreviewPage: React.FC = () => {
         <h1 className='text-3xl font-bold text-gray-900 mb-6'>
           Resume Preview
         </h1>
-        <ResumePreview
-          formData={formData}
-          onEdit={handleEdit}
-          onSave={handleSave}
-          onRegenerate={handleRegenerate}
-          isLoading={isReGenerating}
-        />
+        {formData.generatedResumeProfile ? (
+          <ResumePreview
+            formData={formData}
+            onEdit={handleEdit}
+            onSave={handleSave}
+            onRegenerate={handleRegenerate}
+            isLoading={isReGenerating}
+          />
+        ) : (
+          <div className='text-center p-10'>
+            <p>Loading your resume...</p>
+          </div>
+        )}
       </div>
     </AppLayout>
   );

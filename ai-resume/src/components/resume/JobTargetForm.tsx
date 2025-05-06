@@ -257,12 +257,6 @@ const JobTargetForm: React.FC<JobTargetFormProps> = ({
             hint='Optional: Include any additional context that might help with resume optimization'
           />
         </div>
-
-        <div className='mt-6 text-right'>
-          <button type='submit' className='hidden'>
-            Generate Resume
-          </button>
-        </div>
       </form>
     </FormSection>
   );
