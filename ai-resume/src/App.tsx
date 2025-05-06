@@ -52,7 +52,20 @@ const CreateResumePage: React.FC = () => {
     setIsGenerating(true);
     try {
       // First, combine the existing formData with the new data from the final step
-      const completeFormData = { ...formData, ...data };
+      console.log('Data from final step:', data);
+
+      // First, combine the existing formData with the new data from the final step
+      const completeFormData = {
+        ...data,
+        // Explicitly extract and include all job target fields
+        targetJobTitle: data.targetJobTitle,
+        targetIndustry: data.targetIndustry,
+        targetCompanySize: data.targetCompanySize,
+        targetJobLevel: data.targetJobLevel,
+        jobDescription: data.jobDescription,
+        keySkillsToHighlight: data.keySkillsToHighlight,
+        additionalNotes: data.additionalNotes,
+      };
 
       console.log('Complete form data before API call:', completeFormData);
 
@@ -63,7 +76,7 @@ const CreateResumePage: React.FC = () => {
         // Store both the form data and the generated resume profile
         const resultData = {
           ...completeFormData,
-          generatedResumeProfile: response.resume, // This now contains the structured resume data
+          generatedResumeProfile: response.resume,
         };
 
         // Update state
@@ -392,7 +405,6 @@ const ResumePreviewPage: React.FC = () => {
   useEffect(() => {
     if (!formData.fullName || !formData.generatedResumeProfile) {
       // Missing critical data, redirect back to form
-      alert('Not found data ');
       navigate('/resume/create');
     }
   }, [formData, navigate]);

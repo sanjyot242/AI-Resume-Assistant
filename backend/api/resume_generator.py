@@ -98,7 +98,7 @@ Each skill needs a unique id string.
 Ensure bullets are detailed and quantified where possible.
 Organize skills into appropriate categories.
 """
-
+    print(prompt)
     completion = client.chat.completions.create(
         model="gpt-4o-mini",  
         messages=[

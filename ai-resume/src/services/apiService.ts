@@ -92,12 +92,16 @@ const convertFormDataToStudentInfo = (
     )
     .join('\n');
 
-  // Include job target information
-  const jobTarget = formData.jobTarget
-    ? `Target Job Title: ${formData.jobTarget.targetJobTitle || ''}\n` +
-      `Target Industry: ${formData.jobTarget.targetIndustry || ''}\n` +
-      `Target Level: ${formData.jobTarget.targetJobLevel || ''}`
-    : '';
+  // Critical fix: Extract job target information correctly
+  // This directly references the individual fields from formData
+  const jobTarget =
+    `Target Job Title: ${formData.targetJobTitle || ''}\n` +
+    `Target Industry: ${formData.targetIndustry || ''}\n` +
+    `Target Company Size: ${formData.targetCompanySize || ''}\n` +
+    `Target Level: ${formData.targetJobLevel || ''}\n` +
+    `Key Skills to Highlight: ${formData.keySkillsToHighlight || ''}\n` +
+    `Job Description: ${formData.jobDescription || ''}\n` +
+    `Additional Notes: ${formData.additionalNotes || ''}`;
 
   return {
     name,
@@ -110,7 +114,7 @@ const convertFormDataToStudentInfo = (
     skills: skillsFormatted,
     experience,
     summary,
-    job_target: jobTarget,
+    job_target: jobTarget, // Include the job target information
   };
 };
 
@@ -122,7 +126,8 @@ export async function generateResume(
 ): Promise<ResumeGenerationResponse> {
   try {
     const studentInfo = convertFormDataToStudentInfo(formData);
-    const jobDescription = formData.jobTarget?.jobDescription || '';
+    // Extract job description directly from formData
+    const jobDescription = formData.jobDescription || '';
 
     console.log('Sending to backend:', {
       student_info: studentInfo,

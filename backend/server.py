@@ -37,6 +37,8 @@ async def root():
 @app.post("/api/generate-resume")
 async def api_generate_resume(request: ResumeRequest):
     try:
+        print(request.student_info)
+        print(request.job_description)
         resume = generate_resume(
             request.student_info.name,
             request.student_info.email,

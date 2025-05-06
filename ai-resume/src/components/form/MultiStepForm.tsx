@@ -51,12 +51,15 @@ const MultiStepForm: React.FC<MultiStepFormProps> = ({
 
   const handleNext = useCallback(() => {
     if (isLastStep) {
+      // When submitting the final step, we should already have all the form data
+      // Because each step component should have called onUpdateFormData
+      // Just submit the current accumulated form data
       handleSubmit();
     } else {
       setCurrentStepIndex((prevIndex) => prevIndex + 1);
       window.scrollTo(0, 0); // Scroll to top for new step
     }
-  }, [isLastStep]); // Only depend on isLastStep
+  }, [isLastStep, handleSubmit]);
 
   const handleBack = useCallback(() => {
     if (!isFirstStep) {
@@ -76,10 +79,12 @@ const MultiStepForm: React.FC<MultiStepFormProps> = ({
     [currentStepIndex]
   ); // Only depend on currentStepIndex
 
-  // This needs to be outside of useCallback because it needs access to current formData
+  // Modify the handleSubmit function to ensure it passes the complete form data
   async function handleSubmit() {
     setIsSubmitting(true);
     try {
+      // Log the complete form data to verify it contains all step data
+      console.log('Submitting complete form data:', formData);
       await onComplete(formData);
     } catch (error) {
       console.error('Form submission error:', error);
