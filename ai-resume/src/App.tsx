@@ -1,5 +1,5 @@
 // App.tsx
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   BrowserRouter as Router,
   Routes,
@@ -18,17 +18,28 @@ import ResumePreview from './components/resume/ResumePreview';
 import FileUpload from './components/ui/FileUpload';
 import Card from './components/ui/Card';
 import Button from './components/ui/Button';
+import apiService from './services/apiService';
 
-// Mock API call for resume generation
+// API call for resume generation
 const generateResume = async (
   formData: Record<string, any>
 ): Promise<Record<string, any>> => {
-  // In a real implementation, this would be a call to a backend service
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve(formData); // For now, just return the input data
-    }, 2000);
-  });
+  // Call our backend API service
+  const response = await apiService.generateResume(formData);
+
+  // If the API call was successful, return the data
+  if (response.success && response.resume) {
+    // In a real implementation, we would parse the resume content
+    // For now, we'll just return the original form data
+    return {
+      ...formData,
+      generatedResume: response.resume,
+    };
+  }
+
+  // If the API call failed, return the original data
+  console.error('Error generating resume:', response.error);
+  return formData;
 };
 
 // Create New Resume Page
@@ -40,11 +51,51 @@ const CreateResumePage: React.FC = () => {
   const handleFormComplete = async (data: Record<string, any>) => {
     setIsGenerating(true);
     try {
-      const generatedResume = await generateResume(data);
-      setFormData(generatedResume);
-      navigate('/resume/preview');
+      // First, combine the existing formData with the new data from the final step
+      console.log('Data from final step:', data);
+
+      // First, combine the existing formData with the new data from the final step
+      const completeFormData = {
+        ...data,
+        // Explicitly extract and include all job target fields
+        targetJobTitle: data.targetJobTitle,
+        targetIndustry: data.targetIndustry,
+        targetCompanySize: data.targetCompanySize,
+        targetJobLevel: data.targetJobLevel,
+        jobDescription: data.jobDescription,
+        keySkillsToHighlight: data.keySkillsToHighlight,
+        additionalNotes: data.additionalNotes,
+      };
+
+      console.log('Complete form data before API call:', completeFormData);
+
+      // Call API to generate resume
+      const response = await apiService.generateResume(completeFormData);
+
+      if (response.success && response.resume) {
+        // Store both the form data and the generated resume profile
+        const resultData = {
+          ...completeFormData,
+          generatedResumeProfile: response.resume,
+        };
+
+        // Update state
+        setFormData(resultData);
+
+        // Also store in sessionStorage as backup
+        sessionStorage.setItem('resumeData', JSON.stringify(resultData));
+
+        // Navigate to preview page with a small delay to ensure state is updated
+        setTimeout(() => {
+          navigate('/resume/preview');
+        }, 100);
+      } else {
+        console.error('Error generating resume:', response.error);
+        alert('Failed to generate resume. Please try again.');
+      }
     } catch (error) {
       console.error('Error generating resume:', error);
+      alert('An unexpected error occurred. Please try again.');
     } finally {
       setIsGenerating(false);
     }
@@ -162,12 +213,20 @@ const ImproveResumePage: React.FC = () => {
     setIsLoading(true);
 
     try {
-      // In a real implementation, this would send the file to a backend service
-      // that would parse it and extract resume information
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      // Call our backend API service to parse the resume file
+      const response = await apiService.parseResumeFile(file);
 
-      // Simulate successful parsing
-      navigate('/resume/edit');
+      if (response.success) {
+        // Store parsed data in sessionStorage or state management
+        // This would be handled better in a real implementation
+        sessionStorage.setItem('parsedResumeData', JSON.stringify(response));
+        navigate('/resume/edit');
+      } else {
+        setError(
+          response.error ||
+            'There was an error processing your resume. Please try again.'
+        );
+      }
     } catch (error) {
       console.error('Error parsing resume:', error);
       setError('There was an error processing your resume. Please try again.');
@@ -221,99 +280,134 @@ const ResumePreviewPage: React.FC = () => {
   const navigate = useNavigate();
   const [isReGenerating, setIsReGenerating] = useState(false);
 
-  // In a real app, this data would come from a state management library or context
-  const [formData] = useState<Record<string, any>>({
-    fullName: 'John Doe',
-    email: 'john.doe@example.com',
-    phone: '(555) 123-4567',
-    location: 'New York, NY',
-    linkedIn: 'linkedin.com/in/johndoe',
-    website: 'johndoe.dev',
-    summary:
-      'Experienced software engineer with a passion for developing innovative solutions that solve real-world problems. Specializing in frontend development with React and TypeScript, with a strong background in user experience design and responsive web applications.',
-    education: [
+  const storedData = sessionStorage.getItem('resumeData');
+  const initialData = storedData
+    ? JSON.parse(storedData)
+    : // In a real app, this data would come from a state management library or context
       {
-        id: '1',
-        school: 'University of Technology',
-        degree: "Bachelor's Degree",
-        fieldOfStudy: 'Computer Science',
-        startDate: '2015-09',
-        endDate: '2019-05',
-        location: 'Boston, MA',
-        gpa: '3.8',
-        description:
-          "Dean's List, Relevant coursework in Software Engineering, Data Structures, Algorithms",
-        current: false,
-      },
-    ],
-    experience: [
-      {
-        id: '1',
-        company: 'Tech Solutions Inc.',
-        jobTitle: 'Senior Frontend Developer',
+        fullName: 'John Doe',
+        email: 'john.doe@example.com',
+        phone: '(555) 123-4567',
         location: 'New York, NY',
-        startDate: '2021-06',
-        endDate: 'Present',
-        current: true,
-        description: 'Lead developer on customer-facing web applications',
-        bullets: [
-          'Architected and implemented a React component library that reduced development time by 40%',
-          "Led a team of 5 developers in rebuilding the company's flagship product using React and TypeScript",
-          'Implemented performance optimizations that improved load times by 60%',
-          'Collaborated with UX designers to create an intuitive, accessible user interface',
+        linkedIn: 'linkedin.com/in/johndoe',
+        website: 'johndoe.dev',
+        summary:
+          'Experienced software engineer with a passion for developing innovative solutions that solve real-world problems. Specializing in frontend development with React and TypeScript, with a strong background in user experience design and responsive web applications.',
+        education: [
+          {
+            id: '1',
+            school: 'University of Technology',
+            degree: "Bachelor's Degree",
+            fieldOfStudy: 'Computer Science',
+            startDate: '2015-09',
+            endDate: '2019-05',
+            location: 'Boston, MA',
+            gpa: '3.8',
+            description:
+              "Dean's List, Relevant coursework in Software Engineering, Data Structures, Algorithms",
+            current: false,
+          },
         ],
-      },
-      {
-        id: '2',
-        company: 'Digital Innovations',
-        jobTitle: 'Frontend Developer',
-        location: 'Boston, MA',
-        startDate: '2019-06',
-        endDate: '2021-05',
-        current: false,
-        description: '',
-        bullets: [
-          'Developed responsive web applications using React and Redux',
-          'Implemented unit tests that increased code coverage from 45% to 85%',
-          'Mentored junior developers and conducted code reviews',
+        experience: [
+          {
+            id: '1',
+            company: 'Tech Solutions Inc.',
+            jobTitle: 'Senior Frontend Developer',
+            location: 'New York, NY',
+            startDate: '2021-06',
+            endDate: 'Present',
+            current: true,
+            description: 'Lead developer on customer-facing web applications',
+            bullets: [
+              'Architected and implemented a React component library that reduced development time by 40%',
+              "Led a team of 5 developers in rebuilding the company's flagship product using React and TypeScript",
+              'Implemented performance optimizations that improved load times by 60%',
+              'Collaborated with UX designers to create an intuitive, accessible user interface',
+            ],
+          },
+          {
+            id: '2',
+            company: 'Digital Innovations',
+            jobTitle: 'Frontend Developer',
+            location: 'Boston, MA',
+            startDate: '2019-06',
+            endDate: '2021-05',
+            current: false,
+            description: '',
+            bullets: [
+              'Developed responsive web applications using React and Redux',
+              'Implemented unit tests that increased code coverage from 45% to 85%',
+              'Mentored junior developers and conducted code reviews',
+            ],
+          },
         ],
-      },
-    ],
-    skills: [
-      { id: '1', name: 'React', category: 'Programming', level: 'Expert' },
-      { id: '2', name: 'TypeScript', category: 'Programming', level: 'Expert' },
-      { id: '3', name: 'JavaScript', category: 'Programming', level: 'Expert' },
-      { id: '4', name: 'HTML/CSS', category: 'Programming', level: 'Advanced' },
-      { id: '5', name: 'Redux', category: 'Programming', level: 'Advanced' },
-      { id: '6', name: 'Git', category: 'Tools', level: 'Advanced' },
-      { id: '7', name: 'Jest', category: 'Tools', level: 'Intermediate' },
-      { id: '8', name: 'Webpack', category: 'Tools', level: 'Intermediate' },
-      {
-        id: '9',
-        name: 'UI/UX Design',
-        category: 'Design',
-        level: 'Intermediate',
-      },
-      {
-        id: '10',
-        name: 'Agile/Scrum',
-        category: 'Management',
-        level: 'Advanced',
-      },
-      {
-        id: '11',
-        name: 'Team Leadership',
-        category: 'Soft Skills',
-        level: 'Advanced',
-      },
-      {
-        id: '12',
-        name: 'Problem Solving',
-        category: 'Soft Skills',
-        level: 'Expert',
-      },
-    ],
-  });
+        skills: [
+          { id: '1', name: 'React', category: 'Programming', level: 'Expert' },
+          {
+            id: '2',
+            name: 'TypeScript',
+            category: 'Programming',
+            level: 'Expert',
+          },
+          {
+            id: '3',
+            name: 'JavaScript',
+            category: 'Programming',
+            level: 'Expert',
+          },
+          {
+            id: '4',
+            name: 'HTML/CSS',
+            category: 'Programming',
+            level: 'Advanced',
+          },
+          {
+            id: '5',
+            name: 'Redux',
+            category: 'Programming',
+            level: 'Advanced',
+          },
+          { id: '6', name: 'Git', category: 'Tools', level: 'Advanced' },
+          { id: '7', name: 'Jest', category: 'Tools', level: 'Intermediate' },
+          {
+            id: '8',
+            name: 'Webpack',
+            category: 'Tools',
+            level: 'Intermediate',
+          },
+          {
+            id: '9',
+            name: 'UI/UX Design',
+            category: 'Design',
+            level: 'Intermediate',
+          },
+          {
+            id: '10',
+            name: 'Agile/Scrum',
+            category: 'Management',
+            level: 'Advanced',
+          },
+          {
+            id: '11',
+            name: 'Team Leadership',
+            category: 'Soft Skills',
+            level: 'Advanced',
+          },
+          {
+            id: '12',
+            name: 'Problem Solving',
+            category: 'Soft Skills',
+            level: 'Expert',
+          },
+        ],
+      };
+  const [formData, setFormData] = useState<Record<string, any>>(initialData);
+  useEffect(() => {
+    if (!formData.fullName || !formData.generatedResumeProfile) {
+      // Missing critical data, redirect back to form
+      navigate('/resume/create');
+    }
+  }, [formData, navigate]);
 
   const handleEdit = (section: string) => {
     navigate(`/resume/create?section=${section}`);
@@ -327,8 +421,18 @@ const ResumePreviewPage: React.FC = () => {
   const handleRegenerate = async () => {
     setIsReGenerating(true);
     try {
-      // In a real implementation, this would call a backend service
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      // Call our backend API service to regenerate the resume
+      const response = await apiService.generateResume(formData);
+
+      if (response.success && response.resume) {
+        // In a real implementation, we would update the form data with the new resume
+        console.log('Resume regenerated successfully:', response.resume);
+
+        // We could show a success message or update the UI
+        // For now, we'll just show a console message
+      } else {
+        console.error('Error regenerating resume:', response.error);
+      }
     } catch (error) {
       console.error('Error regenerating resume:', error);
     } finally {
@@ -342,13 +446,19 @@ const ResumePreviewPage: React.FC = () => {
         <h1 className='text-3xl font-bold text-gray-900 mb-6'>
           Resume Preview
         </h1>
-        <ResumePreview
-          formData={formData}
-          onEdit={handleEdit}
-          onSave={handleSave}
-          onRegenerate={handleRegenerate}
-          isLoading={isReGenerating}
-        />
+        {formData.generatedResumeProfile ? (
+          <ResumePreview
+            formData={formData}
+            onEdit={handleEdit}
+            onSave={handleSave}
+            onRegenerate={handleRegenerate}
+            isLoading={isReGenerating}
+          />
+        ) : (
+          <div className='text-center p-10'>
+            <p>Loading your resume...</p>
+          </div>
+        )}
       </div>
     </AppLayout>
   );

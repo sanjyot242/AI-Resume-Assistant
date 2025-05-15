@@ -44,10 +44,18 @@ const JobTargetForm: React.FC<JobTargetFormProps> = ({
     >
   ) => {
     const { name, value } = e.target;
+
+    // Update local state
     setJobTarget((prev) => ({
       ...prev,
       [name]: value,
     }));
+
+    // Also update the parent's formData immediately
+    // This ensures the data is available when the form is submitted
+    onUpdateFormData({
+      [name]: value,
+    });
 
     // Clear error for this field
     if (errors[name]) {
@@ -75,10 +83,26 @@ const JobTargetForm: React.FC<JobTargetFormProps> = ({
   };
 
   // Handle form submission
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
     if (validateForm()) {
+      // When submitting, ensure ALL job target data is passed
+      // with the correct field structure
+      onUpdateFormData({
+        // Keeping the structure flat ensures it can be properly
+        // processed by the parent component
+        targetJobTitle: jobTarget.targetJobTitle,
+        targetIndustry: jobTarget.targetIndustry,
+        targetCompanySize: jobTarget.targetCompanySize,
+        targetJobLevel: jobTarget.targetJobLevel,
+        jobDescription: jobTarget.jobDescription,
+        keySkillsToHighlight: jobTarget.keySkillsToHighlight,
+        additionalNotes: jobTarget.additionalNotes,
+      });
+
+      // Then proceed to the next step
       onNext();
     }
   };
@@ -256,12 +280,6 @@ const JobTargetForm: React.FC<JobTargetFormProps> = ({
             error={errors.additionalNotes}
             hint='Optional: Include any additional context that might help with resume optimization'
           />
-        </div>
-
-        <div className='mt-6 text-right'>
-          <button type='submit' className='hidden'>
-            Generate Resume
-          </button>
         </div>
       </form>
     </FormSection>

@@ -1,6 +1,6 @@
 // types.ts
 export interface PersonalInfo {
-  fullName: string;
+  name: string;
   email: string;
   phone: string;
   location: string;
@@ -39,6 +39,19 @@ export interface Skill {
   name: string;
   category: string;
   level?: string;
+}
+
+export interface ResumeProfile {
+  fullName: string;
+  email: string;
+  phone: string;
+  location: string;
+  linkedIn: string;
+  website: string;
+  summary: string;
+  education: Education[];
+  experience: Experience[];
+  skills: Skill[];
 }
 
 export interface JobTarget {
@@ -103,8 +116,8 @@ export interface APIError {
 
 export interface ResumeGenerationResponse {
   success: boolean;
-  data?: ResumeData;
-  error?: APIError;
+  resume?: ResumeProfile;
+  error?: APIError | string;
   optimizationScore?: number;
   suggestions?: ResumeSuggestion[];
   atsResults?: ATSResults;
